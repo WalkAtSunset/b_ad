@@ -1,9 +1,11 @@
 /*
 应用名称：自用B站去广告脚本
-脚本作者：Cuttlefish（消息Tab修复版）
-原作者：ddgksf2013 / deezertidal
-修改说明：底部导航由「ID白名单」改为「黑名单」，修复消息Tab被误删问题
-         只移除「会员购」，其余所有Tab（含消息）正常保留
+脚本作者：Cuttlefish
+微信账号：公众号墨鱼手记
+更新时间：2022-10-11
+脚本版本：(69)
+通知频道：https://t.me/ddgksf2021
+问题反馈：ddgksf2013@163.com
 */
 const scriptName = "BiliBili";
 const storyAidKey = "bilibili_story_aid";
@@ -39,6 +41,7 @@ if (magicJS.read(blackKey)) {
                   bannerItems.push(banner);
                 }
               }
+              // 去除广告后，如果banner大于等于1个才添加到响应体
               if (bannerItems.length >= 1) {
                 item["banner_item"] = bannerItems;
                 items.push(item);
@@ -58,8 +61,7 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`推荐去广告出现异常：${err}`);
         }
         break;
-
-      // 匹配story模式
+      // 匹配story模式，用于记录Story的aid
       case /^https:\/\/app\.bilibili\.com\/x\/v2\/feed\/index\/story\?/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
@@ -77,38 +79,24 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`记录Story的aid出现异常：${err}`);
         }
         break;
-
-      // ============================================================
-      // 标签页处理（核心修改点）
-      // 原版：bottomList 白名单 → 消息Tab ID不在列表中，被误删
-      // 修复：底部改为黑名单，仅删除「会员购」，其余全部保留
-      // ============================================================
+      
+      // 标签页处理，如去除会员购等等
       case /^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/tab/.test(magicJS.request.url):
         try {
-          // top 和 tab 的白名单保持不变（这两个没问题）
+          
           const tabList = new Set([39, 40, 41, 774, 857, 545, 151, 442, 99, 100, 101, 554, 556]);
+          
           const topList = new Set([176, 107]);
-
-          // 【已知会员购 Tab ID】如果抓包发现不同版本ID有变化，在此追加
-          // 改为黑名单：只删会员购，消息等其他Tab全部保留
-          const bottomBlackIds = new Set([
-            180,  // 会员购（常见ID之一）
-            490,  // 会员购（部分版本）
-            491,  // 会员购（部分版本）
-          ]);
-          // 同时通过 uri 关键字兜底拦截，防止ID变化失效
-          const bottomBlackUris = ["bilibili://mall", "mall.bilibili.com"];
-
+          
+          const bottomList = new Set([177, 178, 179, 181, 102,  104, 106, 486, 488, 489]);
           let obj = JSON.parse(magicJS.response.body);
-
           if (obj["data"]["tab"]) {
             let tab = obj["data"]["tab"].filter((e) => {
               return tabList.has(e.id);
             });
             obj["data"]["tab"] = tab;
           }
-
-          // top：将 id 222 & 107 调整为Story按钮（原逻辑保留）
+          // 将 id（222 & 107）调整为Story功能按钮
           let storyAid = magicJS.read(storyAidKey);
           if (!storyAid) {
             storyAid = "246834163";
@@ -125,32 +113,24 @@ if (magicJS.read(blackKey)) {
             });
             obj["data"]["top"] = top;
           }
-
-          // ★ 底部导航：黑名单方式（修复消息Tab被删问题）
           if (obj["data"]["bottom"]) {
-            obj["data"]["bottom"] = obj["data"]["bottom"].filter((e) => {
-              // 通过 ID 黑名单过滤
-              if (bottomBlackIds.has(e.id)) return false;
-              // 通过 URI 关键字兜底过滤（防止 ID 版本差异）
-              const uri = e.uri || e.link || "";
-              for (const kw of bottomBlackUris) {
-                if (uri.includes(kw)) return false;
-              }
-              // 其余 Tab（首页、关注、动态、消息、我的等）全部保留 ✅
-              return true;
+            let bottom = obj["data"]["bottom"].filter((e) => {
+              // ★ 唯一修改：名字含「消息」的 Tab 直接放行，其余维持原白名单逻辑
+              if (e.name && e.name.includes("消息")) return true;
+              return bottomList.has(e.id);
             });
+            obj["data"]["bottom"] = bottom;
           }
-
           body = JSON.stringify(obj);
         } catch (err) {
           magicJS.logError(`标签页处理出现异常：${err}`);
         }
         break;
-
-      // 我的页面处理
+      // 我的页面处理，去除一些推广按钮
       case /^https?:\/\/app\.bilibili\.com\/x\/v2\/account\/mine/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
+          
           const itemList = new Set([396, 397, 398, 399, 402, 404, 407, 410, 425, 426, 427, 428, 430, 432, 433, 434, 494, 495, 496, 497, 500, 501]);
           obj["data"]["sections_v2"].forEach((element, index) => {
             element["items"].forEach((e) => {
@@ -166,20 +146,35 @@ if (magicJS.read(blackKey)) {
             delete obj["data"]["sections_v2"][index].be_up_title;
             delete obj["data"]["sections_v2"][index].tip_icon;
             delete obj["data"]["sections_v2"][index].tip_title;
+            //2022-02-16 add by ddgksf2013
             for (let ii = 0; ii < obj["data"]["sections_v2"].length; ii++) {
-              if(obj.data.sections_v2[ii].title=='创作中心'||obj.data.sections_v2[ii].title=='創作中心'){
-                delete obj.data.sections_v2[ii].title;
-                delete obj.data.sections_v2[ii].type;
+              if(obj.data.sections_v2[ii].title=='推荐服务'||obj.data.sections_v2[ii].title=='推薦服務'){
+                //obj.data.sections_v2[ii].items[0].title='\u516C\u773E\u865F';
+                //obj.data.sections_v2[ii].items[1].title='\u58A8\u9B5A\u624B\u8A18';
               }
-            }
+              if(obj.data.sections_v2[ii].title=='更多服務'||obj.data.sections_v2[ii].title=='更多服务'){
+                  if(obj.data.sections_v2[ii].items[0].id==500){
+                      //obj.data.sections_v2[ii].items[0].title='\u516C\u773E\u865F';
+                  }
+                  if(obj.data.sections_v2[ii].items[1].id==501){
+                      //obj.data.sections_v2[ii].items[1].title='\u58A8\u9B5A\u624B\u8A18';
+                  }
+              }
+              if(obj.data.sections_v2[ii].title=='创作中心'||obj.data.sections_v2[ii].title=='創作中心'){
+                  delete obj.data.sections_v2[ii].title;
+                  delete obj.data.sections_v2[ii].type;
+              }
+
+            }      
             delete obj.data.vip_section_v2;
             delete obj.data.vip_section;
             obj["data"]["sections_v2"][index]["items"] = items;
+            //2022-03-05 add by ddgksf2013
             if(obj.data.hasOwnProperty("live_tip")){
-              obj["data"]["live_tip"]={};
+                obj["data"]["live_tip"]={};
             }
             if(obj.data.hasOwnProperty("answer")){
-              obj["data"]["answer"]={};
+                obj["data"]["answer"]={};
             }
             obj["data"]["vip_type"] = 2;
             obj["data"]["vip"]["type"] = 2;
@@ -192,7 +187,6 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`我的页面处理出现异常：${err}`);
         }
         break;
-
       // 直播去广告
       case /^https?:\/\/api\.live\.bilibili\.com\/xlive\/app-room\/v1\/index\/getInfoByRoom/.test(magicJS.request.url):
         try {
@@ -203,25 +197,25 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`直播去广告出现异常：${err}`);
         }
         break;
-
-      // 屏蔽热搜
-      case /^https?:\/\/app\.bilibili\.com\/x\/v2\/search\/square/.test(magicJS.request.url):
+        //屏蔽热搜
+        case /^https?:\/\/app\.bilibili\.com\/x\/v2\/search\/square/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
           obj.data={
-            "type": "history",
-            "title": "搜索历史",
-            "search_hotword_revision": 2
-          };
+      "type": "history",
+      "title": "搜索历史",
+      "search_hotword_revision": 2
+    };
           body = JSON.stringify(obj);
         } catch (err) {
           magicJS.logError(`热搜去广告出现异常：${err}`);
         }
         break;
-
-      case /https?:\/\/app\.bilibili\.com\/x\/v2\/account\/myinfo\?/.test(magicJS.request.url):
+        //2022-03-05 add by ddgksf2013
+        case /https?:\/\/app\.bilibili\.com\/x\/v2\/account\/myinfo\?/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
+          //magicJS.logInfo(`公众号墨鱼手记`);
           obj["data"]["vip"]["type"] = 2;
           obj["data"]["vip"]["status"] = 1;
           obj["data"]["vip"]["vip_pay_type"] = 1;
@@ -231,13 +225,14 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`1080P出现异常：${err}`);
         }
         break;
-
       // 追番去广告
       case /pgc\/page\/bangumi/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
           obj.result.modules.forEach((module) => {
+            // 头部banner
             if (module.style.startsWith("banner")) {
+              //i.source_content && i.source_content.ad_content
               module.items = module.items.filter((i) => !(i.link.indexOf("play")==-1));
             }
             if (module.style.startsWith("function")) {
@@ -252,12 +247,12 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`追番去广告出现异常：${err}`);
         }
         break;
-
-      // 观影页去广告
+        // 观影页去广告
       case /pgc\/page\/cinema\/tab\?/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
           obj.result.modules.forEach((module) => {
+            // 头部banner
             if (module.style.startsWith("banner")) {
               module.items = module.items.filter((i) => !(i.link.indexOf("play")==-1));
             }
@@ -273,7 +268,6 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`观影页去广告出现异常：${err}`);
         }
         break;
-
       // 动态去广告
       case /^https?:\/\/api\.vc\.bilibili\.com\/dynamic_svr\/v1\/dynamic_svr\/dynamic_(history|new)\?/.test(magicJS.request.url):
         try {
@@ -281,6 +275,7 @@ if (magicJS.read(blackKey)) {
           let cards = [];
           obj.data.cards.forEach((element) => {
             if (element.hasOwnProperty("display") && element.card.indexOf("ad_ctx") <= 0) {
+              // 解决number类型精度问题导致B站动态中图片无法打开的问题
               element["desc"]["dynamic_id"] = element["desc"]["dynamic_id_str"];
               element["desc"]["pre_dy_id"] = element["desc"]["pre_dy_id_str"];
               element["desc"]["orig_dy_id"] = element["desc"]["orig_dy_id_str"];
@@ -294,34 +289,35 @@ if (magicJS.read(blackKey)) {
           magicJS.logError(`动态去广告出现异常：${err}`);
         }
         break;
-
       // 去除统一设置的皮肤
       case /^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/skin\?/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
+          if (obj && obj.hasOwnProperty("data")&&obj.data.hasOwnProperty("common_equip")&&obj.data.common_equip.hasOwnProperty("package_url")) {
+            //obj["data"]["common_equip"]["package_url"] = "";
+          }
           body = JSON.stringify(obj);
         } catch (err) {
           magicJS.logError(`去除强制设置的皮肤出现异常：${err}`);
         }
         break;
-
-      // 开屏广告（预加载）
+        // 开屏广告（预加载）如果粗暴地关掉，那么就使用预加载的数据，就会导致关不掉
       case /^https:\/\/app\.bilibili\.com\/x\/v2\/splash\/list/.test(magicJS.request.url):
         try {
           let obj = JSON.parse(magicJS.response.body);
           if(obj.data){
-            for (let item of obj["data"]["list"]) {
-              item["duration"] = 0;
+          for (let item of obj["data"]["list"]) {
+              item["duration"] = 0;  // 显示时间
+              // 2040 年
               item["begin_time"] = 2240150400;
               item["end_time"] = 2240150400;
-            }
+          }
           }
           body = JSON.stringify(obj);
         } catch (err) {
           magicJS.logError(`开屏广告（预加载）出现异常：${err}`);
         }
         break;
-
       default:
         magicJS.logWarning("触发意外的请求处理，请确认脚本或复写配置正常。");
         break;
