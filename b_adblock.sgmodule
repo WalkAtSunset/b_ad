@@ -1,1 +1,43 @@
-#!name=ßÙÁ¨ßÙÁ¨ È¥¹ã¸æ£¨ÇáÁ¿°æ - ¼õÉÙ¿¨¶Ù£©#!desc=¾«¼òÈ¥¹ã¸æ£¬ÓÅÏÈ±£Ö¤¼ÓÔØËÙ¶È#!icon=https://raw.githubusercontent.com/deezertidal/private/main/icons/biliad.png[MITM]hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, manga.bilibili.com[URL Rewrite]# ¿ªÆÁ¹ã¸æ^https://app.bilibili.com/x/v2/splash/show - reject-dict^https://app.bilibili.com/x/v2/splash/list - reject-dict# Ê×Ò³»î¶¯ & ÍÆ¹ã^https://app.bilibili.com/x/resource/top/activity - reject-dict^https://app.bilibili.com/x/resource/ip - reject# ËÑË÷ÍÆ¹ã^https://app.bilibili.com/x/v2/search/defaultwords - reject-dict[Script]# Ö»±£ÁôºËĞÄÈ¥¹ã¸æ½Å±¾£¬¼õÉÙ´¦Àí·¶Î§bili_feed = type=http-response, pattern=^https?://app\.bilibili\.com/x/v2/feed/index, requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.jsbili_dynamic = type=http-response, pattern=^https?://api\.vc\.bilibili\.com/dynamic_svr/v1/dynamic_svr/dynamic_(history|new), requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.jsbili_bangumi = type=http-response, pattern=^https?://api\.(bilibili|biliapi)\.(com|net)/pgc/page/(bangumi|cinema/tab), requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.jsbili_live = type=http-response, pattern=^https?://api\.live\.bilibili\.com/xlive/app-room/v1/index/getInfoByRoom, requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.jsbiliad10=type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/tab,requires-body=1,script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.jsbiliad11=type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/v2\/account\/mine,requires-body=1,script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+#!name=å“”å“©å“”å“© å»å¹¿å‘Šï¼ˆè½»é‡ç‰ˆ - è§†é¢‘è¯¦æƒ…ä¼˜åŒ–ï¼‰
+#!desc=ç²¾ç®€å»å¹¿å‘Š + è§†é¢‘è¯¦æƒ…é¡µä¸‹æ–¹å¹¿å‘Šå»é™¤ï¼Œä¼˜å…ˆä¿è¯é€Ÿåº¦
+#!icon=https://raw.githubusercontent.com/deezertidal/private/main/icons/biliad.png
+
+[MITM]
+hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, manga.bilibili.com
+
+[URL Rewrite]
+# å¼€å±å¹¿å‘Š
+^https://app.bilibili.com/x/v2/splash/show - reject-dict
+^https://app.bilibili.com/x/v2/splash/list - reject-dict
+
+# é¦–é¡µæ´»åŠ¨ & æ¨å¹¿
+^https://app.bilibili.com/x/resource/top/activity - reject-dict
+^https://app.bilibili.com/x/resource/ip - reject
+
+# æœç´¢æ¨å¹¿
+^https://app.bilibili.com/x/v2/search/defaultwords - reject-dict
+
+# æ–°å¢ï¼šè§†é¢‘è¯¦æƒ…é¡µç›¸å…³æ¨å¹¿/å¹¿å‘Š
+^https://app.bilibili.com/x/v2/view/material - reject-dict
+^https://api.bilibili.com/x/v2/view/cm - reject-dict
+^https://api.bilibili.com/x/v2/view/related - reject-dict  # ç›¸å…³è§†é¢‘é‡Œçš„å¹¿å‘Š
+^https://api.bilibili.com/x/player/v2 - reject-dict        # æ’­æ”¾å™¨é…ç½®å¹¿å‘Š
+
+[Script]
+# æ ¸å¿ƒè„šæœ¬ï¼ˆä¿æŒè½»é‡ï¼Œåªå¤„ç†å¿…è¦æ¥å£ï¼‰
+bili_feed = type=http-response, pattern=^https?://app\.bilibili\.com/x/v2/feed/index, requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+
+bili_dynamic = type=http-response, pattern=^https?://api\.vc\.bilibili\.com/dynamic_svr/v1/dynamic_svr/dynamic_(history|new), requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+
+bili_view = type=http-response, pattern=^https?://api\.bilibili\.com/x/v2/view, requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+
+bili_bangumi = type=http-response, pattern=^https?://api\.(bilibili|biliapi)\.(com|net)/pgc/page/(bangumi|cinema/tab), requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+
+bili_live = type=http-response, pattern=^https?://api\.live\.bilibili\.com/xlive/app-room/v1/index/getInfoByRoom, requires-body=1, script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+
+#biliad10=type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/tab,requires-body=1,script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
+
+# > å“”å“©å“”å“©æ ‡ç­¾é¡µå¤„ç†
+bilibili_json = type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/tab,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/master/bilibili_json.js
+
+biliad11=type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/v2\/account\/mine,requires-body=1,script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
