@@ -1,0 +1,7 @@
+DOMAIN-SUFFIX,apple-push.com
+DOMAIN-SUFFIX,push.apple.com
+DOMAIN-SUFFIX,push-apns.apple.com
+IP-CIDR,17.0.0.0/8,no-resolve
+IP-CIDR,17.32.0.0/11,no-resolve
+IP-CIDR,17.64.0.0/10,no-resolve
+IP-CIDR,17.128.0.0/10,no-resolve
