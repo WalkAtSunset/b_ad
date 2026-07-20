@@ -1,0 +1,19 @@
+#!name = Bilibili 去广告（开屏/信息流/详情页）
+#!desc = 屏蔽哔哩哔哩 iOS 客户端的开屏广告、首页信息流广告、视频详情页广告。接口特征基于常见公开规律编写，B站接口会不定期调整，如失效请抓包更新。
+#!author = custom
+
+[MITM]
+hostname = %APPEND% app.bilibili.com, api.bilibili.com, app.biliapi.net, grpc.biliapi.net, i0.hdslb.com, i1.hdslb.com, i2.hdslb.com
+
+[Map Local]
+# 开屏广告：接口直接返回空数据，客户端拿不到广告信息就不会展示
+^https?:\/\/app\.bilibili\.com\/x\/resource\/show\/tab data-type=text response-header="HTTP/1.1 200 OK\r\nContent-Type: application/json" data-text="{"code":-1,"data":null}"
+^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/(list|show|event\/list2) data-type=text response-header="HTTP/1.1 200 OK\r\nContent-Type: application/json" data-text="{"code":-1,"data":null}"
+
+[URL Rewrite]
+^https?:\/\/i[0-2]\.hdslb\.com\/bfs\/splash\/ - reject
+
+[Script]
+# 信息流 & 详情页相关推荐里混杂的广告卡片，需要脚本从 JSON 里摘掉，不能整体拦截接口
+bili_feed_ad = type=http-response,pattern=^https?:\/\/app\.bilibili\.com\/x\/v2\/feed\/index,requires-body=1,max-size=-1,timeout=15,script-path=https://raw.githubusercontent.com/WalkAtSunset/b_ad/refs/heads/main/bili_ad_filter.js
+bili_related_ad = type=http-response,pattern=^https?:\/\/api\.bilibili\.com\/x\/web-interface\/(view\/detail|archive\/related),requires-body=1,max-size=-1,timeout=15,script-path=https://raw.githubusercontent.com/WalkAtSunset/b_ad/refs/heads/main/bili_ad_filter.js
